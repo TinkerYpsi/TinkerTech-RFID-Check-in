@@ -1,0 +1,18 @@
+{
+	"default":{
+		"name":"User userman",
+		"membership":{
+			"status":"good"
+		},
+		"tools":[
+			"3dprinter","lasercutter"
+		]
+	},
+	"1019518885922":{
+		"name":"Testing RFID tag",
+		"membership":{
+			"status":"bad"
+		},
+		"tools":[]
+	}
+}

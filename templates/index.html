@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+		<script>
+			$(document).ready(function() {
+				var socket = io.connect('http://' + document.domain + ":" + location.port + "/")
+				socket.on('rfid_scanned', function(msg) {
+					update_site(msg);
+				});
+			});
+
+			function update_site(rfid_data) {
+				rfid_id.innerText = rfid_data.rfid;
+				rfid_name.innerText = rfid_data.name;
+				rfid_membership.innerText = rfid_data.membership;
+				rfid_credit.innerText = rfid_data.credit;
+				rfid_enrolled.innerText = rfid_data.enrolled;
+				rfid_tools.innerText = rfid_data.tools;
+
+				waiting.style.display = "none";
+				category_titles = document.getElementsByClassName('category');
+				for (var i = 0; i < category_titles.length;i++) {
+					category_titles[i].style.display = "block";
+				}
+
+				setTimeout(function() {
+					waiting.style.display="block";
+					category_titles = document.getElementsByClassName('category');
+					for (var i = 0; i < category_titles.length;i++) {
+						category_titles[i].style.display = "none";
+					}
+				},1000*10);
+			}
+		</script>
+		<style>
+			@import url('https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap');
+
+			body {
+				background-color:#eee;
+				padding-left:30%;
+				padding-right:30%;
+				padding-top:100px;
+				font-family:'Roboto', sans-serif;
+			}
+			#header {
+				text-align:center;
+			}
+			#header-img {
+				width:400px;
+				display:inline-block;
+			}
+			#header h1 {
+				display:inline-block;
+				margin-left:25px;
+				color:rgba(62,134,195);
+			}
+			h3 {
+				font-weight:700;
+				font-size:2em;
+			}
+			pre {
+				font-weight:400;
+				display:inline;
+			}
+			hr {
+				border:solid 1px rgba(62,134,195);
+				border-radius:5px;
+			}
+			.category {
+				display:none;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="header">
+			<img id='header-img' src="http://tinkertech.io/wp-content/uploads/2020/02/Tinkertech-WORDMRK-BLUE.png" /><br>
+			<h1>RFID Check In</h1>
+		</div>
+		<hr>
+		<h3 id="waiting">Waiting for RFID scan...</h3>
+		<h3 class='category'>RFID Tag ID: <pre id="rfid_id">10928310928390</pre></h3>
+		<h3 class='category'>Name: <pre id="rfid_name">Testing</pre></h3>
+		<h3 class='category'>Membership: <pre id="rfid_membership">Testing</pre></h3>
+		<h3 class='category'>Credit: <pre id="rfid_credit">Testing</pre></h3>
+		<h3 class='category'>Enrolled: <pre id="rfid_enrolled">Testing</pre></h3>
+		<h3 class='category'>Allowed Tools: <pre id="rfid_tools">Testing</pre></h3>
+	</body>
+</html>
