@@ -79,8 +79,12 @@ def get_user_data(rfid_tag_id):
                     {'rfid':row[0],'name':row[1],'membership':row[2],'enrolled':row[3],'credit':row[4],'tools':row[5]})
 
 def enroll_user(user_info):
-    print("Enrolling user with data: " + user_info)
-    sheet.add_rows(['id','name','membership','credit','tools'],0)
+    print("Enrolling user with data (writing to new row in spreadsheet): " + str(user_info))
+    #sheet.add_rows(list(user_info.values()),0)
+    body = {"range":"A2:M","majorDimension":"ROWS","values": [list(user_info.values())]}
+    request = service.spreadsheets().values().append(spreadsheetId=SPREADSHEET_ID, range='A2:M', insertDataOption="INSERT_ROWS", valueInputOption="RAW", body=body)
+    response = request.execute()
+    print(response)
 
 def rfid_read_loop():
     print("Starting RFID read loop!")

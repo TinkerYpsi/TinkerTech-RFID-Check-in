@@ -4,12 +4,23 @@
 		<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
 		<script>
+			var socket;
 			$(document).ready(function() {
-				var socket = io.connect('http://' + document.domain + ":" + location.port + "/")
+				socket = io.connect('http://' + document.domain + ":" + location.port + "/")
 				socket.on('rfid_scanned', function(msg) {
 					update_site(msg);
 				});
 			});
+
+			function enroll_user() {
+				user_info = {};
+
+				alert("Answer the following questions, then scan the RFID tag");
+				user_info.name = prompt("Please enter name: ");
+				user_info.membership = prompt("Please enter membership status: ");
+
+				socket.emit('enroll_user', user_info);
+			}
 
 			function update_site(rfid_data) {
 				rfid_id.innerText = rfid_data.rfid;
@@ -33,6 +44,7 @@
 					}
 				},1000*10);
 			}
+
 		</script>
 		<style>
 			@import url('https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap');
@@ -76,7 +88,7 @@
 	<body>
 		<div id="header">
 			<img id='header-img' src="http://tinkertech.io/wp-content/uploads/2020/02/Tinkertech-WORDMRK-BLUE.png" /><br>
-			<h1>RFID Check In</h1>
+			<h1>RFID Check In</h1><h1> - </h1><h1 onclick="enroll_user()" style="cursor:pointer;">Enroll user</h1>
 		</div>
 		<hr>
 		<h3 id="waiting">Waiting for RFID scan...</h3>
