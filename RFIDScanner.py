@@ -62,12 +62,21 @@ sheet = service.spreadsheets()
 # --- ---
 print("Authentication finished!")
 
+to_enroll_data = None
 def get_user_data(rfid_tag_id):
+    global to_enroll_data
+
     #See Google Sheets API python documentation
     result = sheet.values().get(spreadsheetId=SPREADSHEET_ID,
             range='A2:M').execute()
     values = result.get('values', [])
     
+    print("To enroll data: " + str(to_enroll_data))
+    if to_enroll_data != None:
+        to_enroll_data['rfid'] = rfid_tag_id
+        enroll_user(to_enroll_data)
+        to_enroll_data = None
+
     for row in values:
         print(len(values))
         if rfid_tag_id == row[0]:
@@ -81,7 +90,8 @@ def get_user_data(rfid_tag_id):
 def enroll_user(user_info):
     print("Enrolling user with data (writing to new row in spreadsheet): " + str(user_info))
     #sheet.add_rows(list(user_info.values()),0)
-    body = {"range":"A2:M","majorDimension":"ROWS","values": [list(user_info.values())]}
+    user_info_list = [user_info['rfid'],user_info['name'],user_info['membership']]
+    body = {"range":"A2:M","majorDimension":"ROWS","values": [user_info_list]}
     request = service.spreadsheets().values().append(spreadsheetId=SPREADSHEET_ID, range='A2:M', insertDataOption="INSERT_ROWS", valueInputOption="RAW", body=body)
     response = request.execute()
     print(response)
@@ -111,7 +121,10 @@ def index_route():
 
 @socketio.on('enroll_user')
 def socket_enroll(user_info):
-    enroll_user(user_info)
+    global to_enroll_data
+    
+    print("Enrollment data sent, waiting for RFID scan!")
+    to_enroll_data = user_info
 
 
 if __name__ == "__main__":
