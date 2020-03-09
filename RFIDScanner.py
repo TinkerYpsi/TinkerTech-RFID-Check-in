@@ -72,29 +72,57 @@ def get_user_data(rfid_tag_id):
     values = result.get('values', [])
     
     print("To enroll data: " + str(to_enroll_data))
-    if to_enroll_data != None:
-        to_enroll_data['rfid'] = rfid_tag_id
-        enroll_user(to_enroll_data)
-        to_enroll_data = None
 
-    for row in values:
+    for i in range(len(values)):
+        row = values[i]
         print(len(values))
         if rfid_tag_id == row[0]:
             print("Authentication succeeded!")
             print(row)
 
-            #Send to WebUI via flask_socketio
-            socketio.emit('rfid_scanned',
-                    {'rfid':row[0],'name':row[1],'membership':row[2],'enrolled':row[3],'credit':row[4],'tools':row[5]})
+            if to_enroll_data != None:
+                #Update user
+                to_enroll_data['rfid'] = rfid_tag_id
+                update_user(to_enroll_data, i)
+                to_enroll_data = None
+            else:
+                #Send to WebUI via flask_socketio
+                socketio.emit('rfid_scanned',
+                        {'rfid':row[0],'name':row[1],'membership':row[2],'enrolled':row[3],'credit':row[4],'tools':row[5]})
+            return
+
+    if to_enroll_data != None:
+        to_enroll_data['rfid'] = rfid_tag_id
+        enroll_user(to_enroll_data)
+        to_enroll_data = None
+    else:
+        socketio.emit('rfid_unknown',{})
 
 def enroll_user(user_info):
     print("Enrolling user with data (writing to new row in spreadsheet): " + str(user_info))
-    #sheet.add_rows(list(user_info.values()),0)
-    user_info_list = [user_info['rfid'],user_info['name'],user_info['membership']]
+    user_info_list = [user_info['rfid'],user_info['name'],user_info['membership'],user_info['enrolled'],user_info['credit'],user_info['tools']]
+
+    #Writing data to sheet
     body = {"range":"A2:M","majorDimension":"ROWS","values": [user_info_list]}
     request = service.spreadsheets().values().append(spreadsheetId=SPREADSHEET_ID, range='A2:M', insertDataOption="INSERT_ROWS", valueInputOption="RAW", body=body)
     response = request.execute()
     print(response)
+
+    socketio.emit('rfid_enrolled',{})
+
+def update_user(user_info, row):
+    print("Updating user with data (updating row in spreadsheet): " + str(user_info))
+    user_info_list = [user_info['rfid'],user_info['name'],user_info['membership'],user_info['enrolled'],user_info['credit'],user_info['tools']]
+
+    #Writing data to sheet
+    range_ = 'A'+str(row+2)+':M'+str(row+2)
+    print("Updating range: " + range_)
+    body = {"range":range_,"majorDimension":"ROWS","values": [user_info_list]}
+    request = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, valueInputOption="RAW",range=range_)
+    response = request.execute()
+    print(response)
+
+    socketio.emit('rfid_enrolled',{})
 
 def rfid_read_loop():
     print("Starting RFID read loop!")
@@ -103,7 +131,7 @@ def rfid_read_loop():
             #Read user id from RFID reader, print to console
             user_id, text = reader.read()
             user_id = str(user_id)
-            print(user_id)
+            print("RFID Tag scanned: " + user_id)
 
             #Request data from Google Sheets
             get_user_data(user_id)
@@ -119,11 +147,16 @@ def rfid_read_loop():
 def index_route():
     return render_template('index.html')
 
+@app.route('/enroll')
+def enroll_route():
+    return render_template('enroll.html')
+
 @socketio.on('enroll_user')
 def socket_enroll(user_info):
     global to_enroll_data
     
     print("Enrollment data sent, waiting for RFID scan!")
+    socketio.emit('rfid_waiting',{})
     to_enroll_data = user_info
 
 
