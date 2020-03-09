@@ -11,14 +11,20 @@
 				socket.on('rfid_scanned', function(msg) {
 					update_site(msg);
 				});
-				socket.on('rfid_waiting', function(msg) {
+				socket.on('rfid_loading', function(msg) {
 					reset_status();
-					waiting.innerText = "Please scan an RFID tag to complete enrollment/updating...";
+					waiting.innerText = "Loading...";
 
 					clearTimeout(reset_timeout);
 					reset_timeout = setTimeout(function() {
 						reset_status();
 					},1000*10);
+				});
+				socket.on('rfid_waiting', function(msg) {
+					reset_status();
+					waiting.innerText = "Please scan an RFID tag to complete enrollment/updating...";
+
+					clearTimeout(reset_timeout);
 				});
 				socket.on('rfid_enrolled', function(msg) {
 					reset_status();
@@ -36,7 +42,7 @@
 					clearTimeout(reset_timeout);
 					reset_timeout = setTimeout(function() {
 						reset_status();
-					},1000*4);
+					},1000*10);
 				});
 			});
 
@@ -57,9 +63,21 @@
 				rfid_id.innerText = rfid_data.rfid;
 				rfid_name.innerText = rfid_data.name;
 				rfid_membership.innerText = rfid_data.membership;
+				rfid_duration.innerText = rfid_data.duration;
 				rfid_credit.innerText = rfid_data.credit;
 				rfid_enrolled.innerText = rfid_data.enrolled;
+				rfid_expiration.innerText = rfid_data.expiration;
 				rfid_tools.innerText = rfid_data.tools;
+
+				if (new Date() >= new Date(rfid_data.expiration)) {
+					expired.style.backgroundColor = "red";
+				} else {
+					expired.style.backgroundColor = "green";
+				}
+
+				if (rfid_duration == 'inactive') {
+					expired.style.backgroundColor = "red";
+				}
 
 				waiting.style.display = "none";
 				category_titles = document.getElementsByClassName('category');
@@ -70,7 +88,7 @@
 				clearTimeout(reset_timeout);
 				reset_timeout = setTimeout(function() {
 					reset_status();
-				},1000*10);
+				},1000*30);
 			}
 
 			function reset_status() {
@@ -124,6 +142,13 @@
 			.category {
 				display:none;
 			}
+			#expired {
+				width:20px;
+				height:20px;
+				display:inline-block;
+				margin-left:10px;
+				border-radius:100px;
+			}
 		</style>
 	</head>
 	<body>
@@ -134,10 +159,12 @@
 		<hr>
 		<h3 id="waiting">Waiting for RFID scan...</h3>
 		<h3 class='category'>RFID Tag ID: <pre id="rfid_id">10928310928390</pre></h3>
-		<h3 class='category'>Name: <pre id="rfid_name">Testing</pre></h3>
-		<h3 class='category'>Membership: <pre id="rfid_membership">Testing</pre></h3>
-		<h3 class='category'>Credit: <pre id="rfid_credit">Testing</pre></h3>
-		<h3 class='category'>Enrolled: <pre id="rfid_enrolled">Testing</pre></h3>
-		<h3 class='category'>Allowed Tools: <pre id="rfid_tools">Testing</pre></h3>
+		<h3 class='category'>Name: <pre id="rfid_name"></pre></h3>
+		<h3 class='category'>Membership type: <pre id="rfid_membership"></pre></h3>
+		<h3 class='category'>Membership duration: <pre id="rfid_duration"></pre></h3>
+		<h3 class='category'>Enrolled: <pre id="rfid_enrolled"></pre></h3>
+		<h3 class='category'>Expiration: <pre id="rfid_expiration"></pre><div id='expired'></div></h3>
+		<h3 class='category'>Allowed Tools: <pre id="rfid_tools"></pre></h3>
+		<h3 class='category' style='opacity:0'>Credit: <pre id="rfid_credit"></pre></h3>
 	</body>
 </html>

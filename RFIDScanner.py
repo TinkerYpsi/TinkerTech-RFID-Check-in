@@ -88,7 +88,7 @@ def get_user_data(rfid_tag_id):
             else:
                 #Send to WebUI via flask_socketio
                 socketio.emit('rfid_scanned',
-                        {'rfid':row[0],'name':row[1],'membership':row[2],'enrolled':row[3],'credit':row[4],'tools':row[5]})
+                        {'rfid':row[0],'name':row[1],'membership':row[2],'duration':row[3],'enrolled':row[4],'expiration':row[5],'credit':row[6],'tools':row[7]})
             return
 
     if to_enroll_data != None:
@@ -100,7 +100,7 @@ def get_user_data(rfid_tag_id):
 
 def enroll_user(user_info):
     print("Enrolling user with data (writing to new row in spreadsheet): " + str(user_info))
-    user_info_list = [user_info['rfid'],user_info['name'],user_info['membership'],user_info['enrolled'],user_info['credit'],user_info['tools']]
+    user_info_list = [user_info['rfid'],user_info['name'],user_info['membership'],user_info['duration'],user_info['enrolled'],user_info['expiration'],user_info['credit'],user_info['tools']]
 
     #Writing data to sheet
     body = {"range":"A2:M","majorDimension":"ROWS","values": [user_info_list]}
@@ -112,7 +112,7 @@ def enroll_user(user_info):
 
 def update_user(user_info, row):
     print("Updating user with data (updating row in spreadsheet): " + str(user_info))
-    user_info_list = [user_info['rfid'],user_info['name'],user_info['membership'],user_info['enrolled'],user_info['credit'],user_info['tools']]
+    user_info_list = [user_info['rfid'],user_info['name'],user_info['membership'],user_info['duration'],user_info['enrolled'],user_info['expiration'],user_info['credit'],user_info['tools']]
 
     #Writing data to sheet
     range_ = 'A'+str(row+2)+':M'+str(row+2)
@@ -134,6 +134,7 @@ def rfid_read_loop():
             print("RFID Tag scanned: " + user_id)
 
             #Request data from Google Sheets
+            socketio.emit('rfid_loading',{})
             get_user_data(user_id)
         except KeyboardInterrupt:
             print("Quitting...")

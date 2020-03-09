@@ -10,46 +10,33 @@
 				socket.on('rfid_scanned', function(msg) {
 					update_site(msg);
 				});
-				socket.on('rfid_waiting', function(msg) {
-					reset_status();
-					waiting.innerText = "Please scan an RFID tag to complete enrollment/updating...";
-
-					clearTimeout(reset_timeout);
-					reset_timeout = setTimeout(function() {
-						reset_status();
-					},1000*10);
-				});
 				socket.on('rfid_enrolled', function(msg) {
-					reset_status();
-					waiting.innerText = "User updated!";
-
-					clearTimeout(reset_timeout);
-					reset_timeout = setTimeout(function() {
-						reset_status();
-					},1000*10);
-				});
-				socket.on('rfid_unknown', function(msg) {
-					reset_status();
-					waiting.innerText = "Unknown RFID tag";
-
-					clearTimeout(reset_timeout);
-					reset_timeout = setTimeout(function() {
-						reset_status();
-					},1000*4);
+					waiting.innerText = "User enrolled! (Please reload this page to enroll another user)";
 				});
 			});
 
 			function enroll_user() {
 				user_info = {};
 
-				alert("Answer the following questions, then scan the RFID tag");
-				user_info.name = prompt("Please enter name: ");
-				user_info.membership = prompt("Please enter membership status: ");
-				user_info.enrolled = '.';
-				user_info.credit = '.';
-				user_info.tools = '.';
+				user_info.name = user_name.value;
+				user_info.membership = membership.value;
+				user_info.duration = duration.value;
+				user_info.enrolled = enrolled.value;
+				if (user_info.duration == "month") {
+					enrolled_date = enrolled.valueAsDate; //Increment this by 1 month
+					enrolled_date.setDate(enrolled_date.getDate() + 30);
+					//https://stackoverflow.com/questions/3066586/get-string-in-yyyymmdd-format-from-js-date-object
+					user_info.expiration = enrolled_date.toISOString().substring(0,10);
+				} else {
+					user_info.expiration = 'n/a';
+				}
+				user_info.credit = credit.value;
+				user_info.tools = tools.value;
 
 				socket.emit('enroll_user', user_info);
+
+				document.getElementById('enrollment-form').style.display = "none";
+				waiting.style.display="block";
 			}
 
 		</script>
@@ -92,7 +79,11 @@
 				border-radius:5px;
 			}
 			.category {
-				display:none;
+			}
+			.submit {
+				text-align:center;
+				cursor:pointer;
+				text-decoration:underline;
 			}
 		</style>
 	</head>
@@ -102,5 +93,24 @@
 			<h1>RFID Enrollment</h1><h1> - </h1><a href='/'>Back</a>
 		</div>
 		<hr>
+		<h3 id="waiting" style='display:none;'>Please scan an RFID tag to complete enrollment/updating...</h3>
+		<div id="enrollment-form">
+			<h3 class='category'>Name: <input id='user_name'></h3>
+			<h3 class='category'>Membership type: <select id='membership'>
+				<option value='individual'>Individual</option>
+				<option value='student'>Student</option>
+				<option value='family'>Family</option>
+			</select></h3>
+			<h3 class='category'>Membership duration: <select id='duration'>
+				<option value='month'>Month</option>
+				<option value='recurring'>Recurring</option>
+				<option value='inactive'>Inactive</option>
+			</select></h3>
+			<h3 class='category' style='display:none;'>Credit: <input id='credit' value='0' type='number'></h3>
+			<h3 class='category'>Enrolled: <input id='enrolled' type='date'></h3>
+			<h3 class='category'>Allowed Tools: <input id='tools'></h3>
+			<hr>
+			<h3 class='submit' onclick="enroll_user()">Submit</h3>
+		</div>
 	</body>
 </html>
