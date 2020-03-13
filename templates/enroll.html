@@ -11,13 +11,14 @@
 					update_site(msg);
 				});
 				socket.on('rfid_enrolled', function(msg) {
-					waiting.innerText = "User enrolled! (Please reload this page to enroll another user)";
+					waiting.innerText = "User enrolled/updated! (Please reload this page to enroll another user)";
 				});
 			});
 
-			function enroll_user() {
+			function enroll_user(rfid) {
 				user_info = {};
 
+				user_info.rfid = rfid;
 				user_info.name = user_name.value;
 				user_info.membership = membership.value;
 				user_info.duration = duration.value;
@@ -90,27 +91,31 @@
 	<body>
 		<div id="header">
 			<img id='header-img' src="http://tinkertech.io/wp-content/uploads/2020/02/Tinkertech-WORDMRK-BLUE.png" /><br>
-			<h1>RFID Enrollment</h1><h1> - </h1><a href='/'>Back</a>
+			<h1>{{ title }}</h1><h1> - </h1><a href='/'>Back</a>
 		</div>
 		<hr>
 		<h3 id="waiting" style='display:none;'>Please scan an RFID tag to complete enrollment/updating...</h3>
 		<div id="enrollment-form">
-			<h3 class='category'>Name: <input id='user_name'></h3>
-			<h3 class='category'>Membership type: <select id='membership'>
+			<h3 class='category'>Name: <input value='{{ name }}' id='user_name'></h3>
+			<h3 class='category'>Membership type: <select value='{{ membership }}' id='membership'>
 				<option value='individual'>Individual</option>
 				<option value='student'>Student</option>
 				<option value='family'>Family</option>
 			</select></h3>
-			<h3 class='category'>Membership duration: <select id='duration'>
+			<h3 class='category'>Membership duration: <select value='{{ duration }}' id='duration'>
 				<option value='month'>Month</option>
 				<option value='recurring'>Recurring</option>
 				<option value='inactive'>Inactive</option>
 			</select></h3>
-			<h3 class='category' style='display:none;'>Credit: <input id='credit' value='0' type='number'></h3>
-			<h3 class='category'>Enrolled: <input id='enrolled' type='date'></h3>
-			<h3 class='category'>Allowed Tools: <input id='tools'></h3>
+			<h3 class='category' style='display:none;'>Credit: <input id='credit' value='{{ credit }}' type='number'></h3>
+			<h3 class='category'>Enrolled: <input id='enrolled' value='{{ enrolled }}' type='date'></h3>
+			<h3 class='category'>Allowed Tools: <input value='{{ tools }}' id='tools'></h3>
 			<hr>
-			<h3 class='submit' onclick="enroll_user()">Submit</h3>
+			{% if rfid %}
+			<h3 class='submit' onclick="enroll_user({{ rfid }})">Submit</h3>
+			{% else %}
+			<h3 class='submit' onclick="enroll_user(0)">Submit</h3>
+			{% endif %}
 		</div>
 	</body>
 </html>

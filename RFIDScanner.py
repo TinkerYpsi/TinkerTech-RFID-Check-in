@@ -22,6 +22,8 @@ from google.auth.transport.requests import Request
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 
+from datetime import datetime
+
 
 # Initialize RFID reader
 reader = SimpleMFRC522()
@@ -62,9 +64,11 @@ sheet = service.spreadsheets()
 # --- ---
 print("Authentication finished!")
 
+last_user_info = None
 to_enroll_data = None
 def get_user_data(rfid_tag_id):
     global to_enroll_data
+    global last_user_info
 
     #See Google Sheets API python documentation
     result = sheet.values().get(spreadsheetId=SPREADSHEET_ID,
@@ -87,8 +91,10 @@ def get_user_data(rfid_tag_id):
                 to_enroll_data = None
             else:
                 #Send to WebUI via flask_socketio
-                socketio.emit('rfid_scanned',
-                        {'rfid':row[0],'name':row[1],'membership':row[2],'duration':row[3],'enrolled':row[4],'expiration':row[5],'credit':row[6],'tools':row[7]})
+                last_user_info = {'rfid':row[0],'name':row[1],'membership':row[2],'duration':row[3],'enrolled':row[4],'expiration':row[5],'credit':row[6],'tools':row[7],'visit':row[8]}
+                socketio.emit('rfid_scanned',last_user_info)
+
+                update_visit_time(i)
             return
 
     if to_enroll_data != None:
@@ -98,13 +104,32 @@ def get_user_data(rfid_tag_id):
     else:
         socketio.emit('rfid_unknown',{})
 
-def enroll_user(user_info):
-    print("Enrolling user with data (writing to new row in spreadsheet): " + str(user_info))
-    user_info_list = [user_info['rfid'],user_info['name'],user_info['membership'],user_info['duration'],user_info['enrolled'],user_info['expiration'],user_info['credit'],user_info['tools']]
+def update_visit_time(row):
+    print("Updating user's last visit time...")
 
     #Writing data to sheet
-    body = {"range":"A2:M","majorDimension":"ROWS","values": [user_info_list]}
-    request = service.spreadsheets().values().append(spreadsheetId=SPREADSHEET_ID, range='A2:M', insertDataOption="INSERT_ROWS", valueInputOption="RAW", body=body)
+    range_ = 'I'+str(row+2)+':I'+str(row+2)
+    print("Updating range: " + range_)
+    today = datetime.now().strftime("%Y-%m-%d %I:%M %p")
+
+    times = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=range_).execute()['values'][0][0]
+    print(times)
+
+    body_ = {"range":range_,"majorDimension":"ROWS","values": [[today+", "+times]]}
+    
+    #Then update them
+    request = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, valueInputOption="RAW",range=range_,body=body_)
+    response = request.execute()
+    print(response)
+
+def enroll_user(user_info):
+    print("Enrolling user with data (writing to new row in spreadsheet): " + str(user_info))
+    today = datetime.now().strftime("%Y-%m-%d %I:%M %p")
+    user_info_list = [user_info['rfid'],user_info['name'],user_info['membership'],user_info['duration'],user_info['enrolled'],user_info['expiration'],user_info['credit'],user_info['tools'],today]
+
+    #Writing data to sheet
+    body_ = {"range":"A2:M","majorDimension":"ROWS","values": [user_info_list]}
+    request = service.spreadsheets().values().append(spreadsheetId=SPREADSHEET_ID, range='A2:M', insertDataOption="INSERT_ROWS", valueInputOption="RAW", body=body_)
     response = request.execute()
     print(response)
 
@@ -117,8 +142,10 @@ def update_user(user_info, row):
     #Writing data to sheet
     range_ = 'A'+str(row+2)+':M'+str(row+2)
     print("Updating range: " + range_)
-    body = {"range":range_,"majorDimension":"ROWS","values": [user_info_list]}
-    request = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, valueInputOption="RAW",range=range_)
+    body_ = {"range":range_,"majorDimension":"ROWS","values": [user_info_list]}
+    
+    #Then update them
+    request = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, valueInputOption="RAW",range=range_,body=body_)
     response = request.execute()
     print(response)
 
@@ -150,7 +177,14 @@ def index_route():
 
 @app.route('/enroll')
 def enroll_route():
-    return render_template('enroll.html')
+    return render_template('enroll.html',title='RFID Enrollment', name='', membership='individual', duration='month', credit='0', enrolled=datetime.now().strftime("%Y-%m-%d"), tools='')
+
+@app.route('/update')
+def update_route():
+    global last_user_info
+
+    if last_user_info != None:
+        return render_template('enroll.html',title='Update User', **last_user_info)
 
 @socketio.on('enroll_user')
 def socket_enroll(user_info):
@@ -159,7 +193,6 @@ def socket_enroll(user_info):
     print("Enrollment data sent, waiting for RFID scan!")
     socketio.emit('rfid_waiting',{})
     to_enroll_data = user_info
-
 
 if __name__ == "__main__":
     #Run RFID loop in seperate thread

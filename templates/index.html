@@ -3,6 +3,7 @@
 	<head>
 		<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+		<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 		<script>
 			var socket;
 			var reset_timeout;
@@ -22,13 +23,13 @@
 				});
 				socket.on('rfid_waiting', function(msg) {
 					reset_status();
-					waiting.innerText = "Please scan an RFID tag to complete enrollment/updating...";
+					waiting.innerHTML = "<i class='material-icons'>notification_important</i> Please scan an RFID tag to complete enrollment/updating...";
 
 					clearTimeout(reset_timeout);
 				});
 				socket.on('rfid_enrolled', function(msg) {
 					reset_status();
-					waiting.innerText = "User updated!";
+					waiting.innerHTML = "<i class='material-icons'>cloud_done</i> User updated!";
 
 					clearTimeout(reset_timeout);
 					reset_timeout = setTimeout(function() {
@@ -37,7 +38,7 @@
 				});
 				socket.on('rfid_unknown', function(msg) {
 					reset_status();
-					waiting.innerText = "Unknown RFID tag";
+					waiting.innerHTML = "<i class='material-icons'>error_outline</i> Unknown RFID tag";
 
 					clearTimeout(reset_timeout);
 					reset_timeout = setTimeout(function() {
@@ -68,6 +69,7 @@
 				rfid_enrolled.innerText = rfid_data.enrolled;
 				rfid_expiration.innerText = rfid_data.expiration;
 				rfid_tools.innerText = rfid_data.tools;
+				rfid_visit.innerText = rfid_data.visit.split(",")[0]; //Just show most recent visit
 
 				if (new Date() >= new Date(rfid_data.expiration)) {
 					expired.style.backgroundColor = "red";
@@ -131,6 +133,9 @@
 				font-weight:700;
 				font-size:2em;
 			}
+			h3 a {
+				color:rgba(62,134,195);
+			}
 			pre {
 				font-weight:400;
 				display:inline;
@@ -147,7 +152,8 @@
 				height:20px;
 				display:inline-block;
 				margin-left:10px;
-				border-radius:100px;
+				border-radius:100%;
+				border: 2px solid black;
 			}
 		</style>
 	</head>
@@ -158,13 +164,15 @@
 		</div>
 		<hr>
 		<h3 id="waiting">Waiting for RFID scan...</h3>
-		<h3 class='category'>RFID Tag ID: <pre id="rfid_id">10928310928390</pre></h3>
-		<h3 class='category'>Name: <pre id="rfid_name"></pre></h3>
-		<h3 class='category'>Membership type: <pre id="rfid_membership"></pre></h3>
-		<h3 class='category'>Membership duration: <pre id="rfid_duration"></pre></h3>
-		<h3 class='category'>Enrolled: <pre id="rfid_enrolled"></pre></h3>
-		<h3 class='category'>Expiration: <pre id="rfid_expiration"></pre><div id='expired'></div></h3>
-		<h3 class='category'>Allowed Tools: <pre id="rfid_tools"></pre></h3>
-		<h3 class='category' style='opacity:0'>Credit: <pre id="rfid_credit"></pre></h3>
+		<h3 class='category'><i class="material-icons">sim_card</i> RFID Tag ID: <pre id="rfid_id">10928310928390</pre></h3>
+		<h3 class='category'><i class="material-icons">person</i> Name: <pre id="rfid_name"></pre></h3>
+		<h3 class='category'><i class="material-icons">card_membership</i> Membership type: <pre id="rfid_membership"></pre></h3>
+		<h3 class='category'><i class="material-icons">timeline</i> Membership duration: <pre id="rfid_duration"></pre></h3>
+		<h3 class='category'><i class="material-icons">access_time</i> Enrolled: <pre id="rfid_enrolled"></pre></h3>
+		<h3 class='category'><i class="material-icons">av_timer</i> Expiration: <pre id="rfid_expiration"></pre><div id='expired'></div></h3>
+		<h3 class='category'><i class="material-icons">timelapse</i> Last visit: <pre id="rfid_visit"></pre></h3>
+		<h3 class='category'><i class="material-icons">pan_tool</i> Allowed Tools: <pre id="rfid_tools"></pre></h3>
+		<h3 class='category'><a href="/update">Update user</a></h3>
+		<h3 class='category' style='opacity:0'><i class="material-icons">attach_money</i> Credit: <pre id="rfid_credit"></pre></h3>
 	</body>
 </html>
